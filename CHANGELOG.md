@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Fix the public-club selector payload for Home Assistant 2026.9.
+- Fix Options Flow initialization for Home Assistant 2026.9.
+- Add privacy-safe member setup failure codes to the integration log.
 
 ## 2.0.0 - 2026-09-25
 

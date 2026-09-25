@@ -21,9 +21,6 @@ from .const import (
 
 
 class NowFitOptionsFlow(config_entries.OptionsFlow):
-    def __init__(self, config_entry) -> None:
-        self.config_entry = config_entry
-
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         if self.config_entry.data[CONF_ENTRY_TYPE] != ENTRY_MEMBER:
             return self.async_abort(reason="no_public_options")

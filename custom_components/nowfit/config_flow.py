@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from hashlib import sha256
 from typing import Any
@@ -29,8 +30,10 @@ from .const import (
 )
 from .cookie_store import export_cookies
 from .exceptions import CannotConnect, InvalidCredentials, NowFitError, UnsupportedLogin
-from .flow_helpers import club_selector_options
+from .flow_helpers import club_selector_options, safe_error_code
 from .options_flow import NowFitOptionsFlow
+
+_LOGGER = logging.getLogger(__name__)
 
 
 class NowFitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
@@ -38,7 +41,7 @@ class NowFitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     @staticmethod
     def async_get_options_flow(config_entry):
-        return NowFitOptionsFlow(config_entry)
+        return NowFitOptionsFlow()
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         return self.async_show_menu(step_id="user", menu_options=[ENTRY_PUBLIC, ENTRY_MEMBER])
@@ -91,12 +94,20 @@ class NowFitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     bool(user_input[CONF_STORE_PASSWORD]),
                 )
             except InvalidCredentials:
+                _LOGGER.warning("Member setup failed: InvalidCredentials")
                 errors["base"] = "invalid_auth"
-            except UnsupportedLogin:
+            except UnsupportedLogin as err:
+                _LOGGER.warning("Member setup failed: UnsupportedLogin:%s", safe_error_code(err))
                 errors["base"] = "unsupported_login"
-            except CannotConnect:
+            except CannotConnect as err:
+                _LOGGER.warning("Member setup failed: CannotConnect:%s", safe_error_code(err))
                 errors["base"] = "cannot_connect"
-            except NowFitError:
+            except NowFitError as err:
+                _LOGGER.warning(
+                    "Member setup failed: %s:%s",
+                    type(err).__name__,
+                    safe_error_code(err),
+                )
                 errors["base"] = "unexpected_response"
             else:
                 identity = sha256(email.casefold().encode()).hexdigest()[:24]
