@@ -29,6 +29,7 @@ from .const import (
 )
 from .cookie_store import export_cookies
 from .exceptions import CannotConnect, InvalidCredentials, NowFitError, UnsupportedLogin
+from .flow_helpers import club_selector_options
 from .options_flow import NowFitOptionsFlow
 
 
@@ -51,10 +52,10 @@ class NowFitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_abort(reason="cannot_connect")
         except NowFitError:
             return self.async_abort(reason="unexpected_response")
-        options = {club.club_id: club.name for club in clubs}
+        clubs_by_id = {club.club_id: club.name for club in clubs}
         if user_input is not None:
             club_id = user_input[CONF_CLUB_ID]
-            club_name = options[club_id]
+            club_name = clubs_by_id[club_id]
             await self.async_set_unique_id(f"public:{club_id}")
             self._abort_if_unique_id_configured()
             return self.async_create_entry(
@@ -69,7 +70,8 @@ class NowFitConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             {
                 vol.Required(CONF_CLUB_ID): selector.SelectSelector(
                     selector.SelectSelectorConfig(
-                        options=options, mode=selector.SelectSelectorMode.DROPDOWN
+                        options=club_selector_options(clubs),
+                        mode=selector.SelectSelectorMode.DROPDOWN,
                     )
                 )
             }
