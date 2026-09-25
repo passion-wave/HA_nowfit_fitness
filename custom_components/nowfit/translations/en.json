@@ -1,0 +1,16 @@
+{
+  "config": {
+    "step": {
+      "user": {"menu_options": {"public": "Public gym", "member": "My member account"}},
+      "public": {"title": "Public gym", "data": {"club_id": "Gym"}},
+      "member": {"title": "Member account", "data": {"email": "Email", "password": "Password", "store_password": "Store password", "display_name": "Display name"}},
+      "reauth_confirm": {"title": "Sign in to NowFit again", "data": {"password": "Password"}}
+    },
+    "error": {"cannot_connect": "Cannot connect to NowFit.", "invalid_auth": "The sign-in was not accepted.", "unsupported_login": "The login form is not supported.", "unexpected_response": "NowFit returned an unexpected response."},
+    "abort": {"already_configured": "This entry is already configured.", "cannot_connect": "Cannot connect to NowFit.", "unexpected_response": "NowFit returned an unexpected response.", "reauth_successful": "Reauthentication was successful."}
+  },
+  "options": {
+    "step": {"init": {"title": "NowFit options", "data": {"minimum_duration": "Minimum completed visit duration (minutes)", "time_zone": "Source time zone", "store_password": "Store password"}}},
+    "abort": {"no_public_options": "Public gym entries currently have no options."}
+  }
+}

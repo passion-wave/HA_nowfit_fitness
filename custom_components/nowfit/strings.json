@@ -1,0 +1,49 @@
+{
+  "title": "NowFit",
+  "config": {
+    "step": {
+      "user": {"menu_options": {"public": "Öffentliches Studio", "member": "Mein Mitgliedskonto"}},
+      "public": {"title": "Öffentliches Studio", "data": {"club_id": "Studio"}},
+      "member": {
+        "title": "Mitgliedskonto",
+        "description": "Anmeldedaten werden direkt an das NowFit-Mitgliederportal gesendet.",
+        "data": {
+          "email": "E-Mail-Adresse",
+          "password": "Kennwort",
+          "store_password": "Kennwort für automatische Wiederanmeldung speichern",
+          "display_name": "Anzeigename"
+        }
+      },
+      "reauth_confirm": {
+        "title": "NowFit erneut anmelden",
+        "description": "Die Sitzung ist abgelaufen. Gib dein Kennwort erneut ein.",
+        "data": {"password": "Kennwort"}
+      }
+    },
+    "error": {
+      "cannot_connect": "Verbindung zum NowFit-Portal fehlgeschlagen.",
+      "invalid_auth": "Anmeldung wurde nicht akzeptiert.",
+      "unsupported_login": "Das aktuelle Loginformular wird noch nicht unterstützt.",
+      "unexpected_response": "NowFit hat eine unerwartete Antwort geliefert."
+    },
+    "abort": {
+      "already_configured": "Dieser NowFit-Eintrag ist bereits eingerichtet.",
+      "cannot_connect": "Verbindung zum NowFit-Portal fehlgeschlagen.",
+      "unexpected_response": "NowFit hat eine unerwartete Antwort geliefert.",
+      "reauth_successful": "NowFit wurde erneut angemeldet."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "NowFit-Optionen",
+        "data": {
+          "minimum_duration": "Mindestdauer für abgeschlossene Besuche (Minuten)",
+          "time_zone": "Zeitzone der Quelldaten",
+          "store_password": "Kennwort für automatische Wiederanmeldung speichern"
+        }
+      }
+    },
+    "abort": {"no_public_options": "Für öffentliche Studioeinträge gibt es derzeit keine Optionen."}
+  }
+}

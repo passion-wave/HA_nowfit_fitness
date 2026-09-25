@@ -1,0 +1,47 @@
+title: NowFit
+views:
+  - title: NowFit
+    path: nowfit
+    icon: mdi:dumbbell
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Jetzt im Studio
+            icon: mdi:account-group
+          - type: tile
+            entity: sensor.nowfit_poing_auslastung
+          - type: tile
+            entity: sensor.nowfit_poing_last_success
+          - type: button
+            entity: button.nowfit_poing_refresh
+      - type: grid
+        cards:
+          - type: heading
+            heading: Meine Ziele
+            icon: mdi:target
+          - type: tile
+            entity: sensor.nowfit_week_goal_current
+          - type: gauge
+            entity: sensor.nowfit_week_goal_display_percent
+            min: 0
+            max: 100
+          - type: tile
+            entity: sensor.nowfit_checkins_month
+      - type: grid
+        cards:
+          - type: heading
+            heading: Mein Verlauf
+            icon: mdi:history
+          - type: tile
+            entity: sensor.nowfit_last_training_start
+          - type: tile
+            entity: sensor.nowfit_last_training_duration
+          - type: tile
+            entity: binary_sensor.nowfit_trained_today
+          - type: tile
+            entity: binary_sensor.nowfit_trained_yesterday
+          - type: button
+            entity: button.nowfit_member_refresh

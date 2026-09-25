@@ -1,0 +1,16 @@
+{
+  "config": {
+    "step": {
+      "user": {"menu_options": {"public": "Öffentliches Studio", "member": "Mein Mitgliedskonto"}},
+      "public": {"title": "Öffentliches Studio", "data": {"club_id": "Studio"}},
+      "member": {"title": "Mitgliedskonto", "data": {"email": "E-Mail-Adresse", "password": "Kennwort", "store_password": "Kennwort speichern", "display_name": "Anzeigename"}},
+      "reauth_confirm": {"title": "NowFit erneut anmelden", "data": {"password": "Kennwort"}}
+    },
+    "error": {"cannot_connect": "Verbindung fehlgeschlagen.", "invalid_auth": "Anmeldung nicht akzeptiert.", "unsupported_login": "Loginformular nicht unterstützt.", "unexpected_response": "Unerwartete Antwort."},
+    "abort": {"already_configured": "Bereits eingerichtet.", "cannot_connect": "Verbindung fehlgeschlagen.", "unexpected_response": "Unerwartete Antwort.", "reauth_successful": "Erneut angemeldet."}
+  },
+  "options": {
+    "step": {"init": {"title": "NowFit-Optionen", "data": {"minimum_duration": "Mindestdauer (Minuten)", "time_zone": "Zeitzone", "store_password": "Kennwort speichern"}}},
+    "abort": {"no_public_options": "Keine Optionen für öffentliche Studioeinträge."}
+  }
+}

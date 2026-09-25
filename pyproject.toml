@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ha-nowfit"
+version = "2.0.0"
+description = "Unofficial NowFit integration for Home Assistant"
+requires-python = ">=3.13"
+dependencies = ["beautifulsoup4==4.14.2"]
+
+[project.optional-dependencies]
+test = [
+  "aiohttp>=3.12",
+  "pytest>=8.4",
+  "pytest-asyncio>=1.2",
+  "pytest-cov>=7.0",
+]
+
+[tool.pytest.ini_options]
+addopts = "-q --cov=custom_components.nowfit --cov-report=term-missing"
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+omit = [
+  "custom_components/nowfit/__init__.py",
+  "custom_components/nowfit/config_flow.py",
+  "custom_components/nowfit/options_flow.py",
+  "custom_components/nowfit/sensor.py",
+  "custom_components/nowfit/binary_sensor.py",
+  "custom_components/nowfit/button.py",
+  "custom_components/nowfit/diagnostics.py",
+  "custom_components/nowfit/repairs.py",
+]
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+

@@ -1,0 +1,12 @@
+{
+  "domain": "nowfit",
+  "name": "NowFit",
+  "version": "2.0.0",
+  "documentation": "https://github.com/passion-wave/HA_nowfit_fitness",
+  "issue_tracker": "https://github.com/passion-wave/HA_nowfit_fitness/issues",
+  "codeowners": ["@thebeater"],
+  "config_flow": true,
+  "integration_type": "service",
+  "iot_class": "cloud_polling",
+  "requirements": ["beautifulsoup4==4.14.2"]
+}

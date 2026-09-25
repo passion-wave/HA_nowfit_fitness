@@ -1,0 +1,28 @@
+title: NowFit
+views:
+  - title: NowFit
+    path: nowfit
+    icon: mdi:dumbbell
+    type: sections
+    max_columns: 3
+    sections:
+      - type: grid
+        cards:
+          - type: heading
+            heading: Jetzt im Studio
+            icon: mdi:account-group
+          - type: tile
+            entity: sensor.nowfit_poing_auslastung
+            name: Aktuell eingecheckt
+          - type: tile
+            entity: sensor.nowfit_poing_last_success
+            name: Stand
+          - type: button
+            entity: button.nowfit_poing_refresh
+            name: Auslastung aktualisieren
+          - type: history-graph
+            title: Eingecheckte Personen · 24 Stunden
+            hours_to_show: 24
+            entities:
+              - entity: sensor.nowfit_poing_auslastung
+                name: Personen
