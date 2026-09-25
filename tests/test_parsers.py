@@ -69,6 +69,15 @@ def test_account_parser() -> None:
     assert (account.month_goal_current, account.month_goal_target) == (7, 12)
 
 
+def test_account_parser_accepts_counter_unit_labels() -> None:
+    html = fixture("account.html").replace(">2</h2>", ">2 Check-ins</h2>", 1)
+    fetched = datetime(2026, 9, 25, tzinfo=ZoneInfo("UTC"))
+
+    account = parse_account(html, fetched)
+
+    assert account.checkins_week == 2
+
+
 def test_history_parser() -> None:
     visits = parse_history(fixture("history.html"), ZoneInfo("Europe/Berlin"))
     assert len(visits) == 2

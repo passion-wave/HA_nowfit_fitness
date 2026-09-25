@@ -7,10 +7,11 @@ from datetime import datetime
 
 from ..exceptions import ParseError
 from ..models import AccountSnapshot
-from .common import integer, soup, text
+from .common import soup, text
 
 _GOAL = re.compile(r"(?P<current>[0-9]+)\s*/\s*(?P<target>[0-9]+)")
 _MINUTES = re.compile(r"(?P<minutes>[0-9]+)\s*(?:min|minute)", re.I)
+_COUNTER = re.compile(r"(?P<value>[0-9]+)")
 
 
 def _value_after_label(document, label: str) -> str | None:
@@ -31,6 +32,14 @@ def _value_after_label(document, label: str) -> str | None:
     return None
 
 
+def _counter(value: str | None) -> int | None:
+    """Return a counter from provider text that may include a unit label."""
+    if value is None:
+        return None
+    match = _COUNTER.search(text(value))
+    return int(match.group("value")) if match else None
+
+
 def parse_account(html: str, fetched_at: datetime) -> AccountSnapshot:
     document = soup(html)
     if document.find("input", attrs={"type": "password"}) is not None:
@@ -47,8 +56,8 @@ def parse_account(html: str, fetched_at: datetime) -> AccountSnapshot:
     month_match = _GOAL.search(month_goal or "")
     return AccountSnapshot(
         fetched_at=fetched_at,
-        checkins_week=integer(week, "checkins_week") if week is not None else None,
-        checkins_month=integer(month, "checkins_month") if month is not None else None,
+        checkins_week=_counter(week),
+        checkins_month=_counter(month),
         average_visit_minutes=int(average_match.group("minutes")) if average_match else None,
         week_goal_current=int(week_match.group("current")) if week_match else None,
         week_goal_target=int(week_match.group("target")) if week_match else None,
