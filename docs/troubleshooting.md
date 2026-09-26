@@ -9,7 +9,10 @@ request makes the entity unavailable; it never substitutes zero people. Manual r
 ## Member data unavailable
 
 Open Settings > Devices & services > NowFit. If reauthentication is requested, enter the password
-there. The public studio entry remains independent.
+there. The public studio entry remains independent. When a stale session makes an authenticated
+provider endpoint return a server error, the integration discards only its NowFit cookies and
+attempts one controlled login. Failed automatic logins are limited across Home Assistant reloads
+by a persistent 30-minute guard.
 
 ## Values changed after a portal update
 

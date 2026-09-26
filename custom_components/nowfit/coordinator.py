@@ -14,7 +14,15 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .auth import SessionManager
 from .client import MemberClient, PublicClient, parse_retry_after
 from .const import ACCOUNT_INTERVAL, HISTORY_INTERVAL, PUBLIC_INTERVAL, SOURCE_TIME_ZONE
-from .exceptions import InvalidCredentials, NowFitError, ParseError, RateLimited, SessionExpired
+from .exceptions import (
+    InvalidCredentials,
+    NowFitError,
+    ParseError,
+    RateLimited,
+    SessionExpired,
+    UpstreamUnavailable,
+)
+from .flow_helpers import safe_error_code
 from .models import (
     AccountSnapshot,
     Coverage,
@@ -35,6 +43,10 @@ def _failure_status(error: NowFitError) -> SourceStatus:
     if isinstance(error, (SessionExpired, InvalidCredentials)):
         return SourceStatus.AUTH_REQUIRED
     return SourceStatus.TEMPORARY_ERROR
+
+
+def _failure_message(error: NowFitError) -> str:
+    return f"{type(error).__name__}:{safe_error_code(error)}"
 
 
 class OccupancyCoordinator(DataUpdateCoordinator[OccupancySnapshot]):
@@ -65,7 +77,7 @@ class OccupancyCoordinator(DataUpdateCoordinator[OccupancySnapshot]):
                 if isinstance(err, RateLimited)
                 else None
             )
-            raise UpdateFailed(type(err).__name__) from err
+            raise UpdateFailed(_failure_message(err)) from err
         self.last_success_at = datetime.now(ZoneInfo("UTC"))
         self.source_status = SourceStatus.READY
         self.last_error = None
@@ -99,7 +111,7 @@ class AccountCoordinator(DataUpdateCoordinator[AccountSnapshot]):
         generation = self.auth.generation
         try:
             data = await self.client.async_get_account()
-        except SessionExpired:
+        except (SessionExpired, UpstreamUnavailable):
             try:
                 await self.auth.async_recover(generation)
                 data = await self.client.async_get_account()
@@ -107,6 +119,10 @@ class AccountCoordinator(DataUpdateCoordinator[AccountSnapshot]):
                 self.source_status = SourceStatus.AUTH_REQUIRED
                 self.last_error = type(err).__name__
                 raise ConfigEntryAuthFailed from err
+            except NowFitError as err:
+                self.source_status = _failure_status(err)
+                self.last_error = type(err).__name__
+                raise UpdateFailed(_failure_message(err)) from err
         except NowFitError as err:
             self.source_status = _failure_status(err)
             self.last_error = type(err).__name__
@@ -115,7 +131,7 @@ class AccountCoordinator(DataUpdateCoordinator[AccountSnapshot]):
                 if isinstance(err, RateLimited)
                 else None
             )
-            raise UpdateFailed(type(err).__name__) from err
+            raise UpdateFailed(_failure_message(err)) from err
         self.last_success_at = data.fetched_at
         self.source_status = SourceStatus.READY
         self.last_error = None
@@ -153,7 +169,7 @@ class HistoryCoordinator(DataUpdateCoordinator[HistorySnapshot]):
         generation = self.auth.generation
         try:
             rows = await self.client.async_get_history(self.timezone)
-        except SessionExpired:
+        except (SessionExpired, UpstreamUnavailable):
             try:
                 await self.auth.async_recover(generation)
                 rows = await self.client.async_get_history(self.timezone)
@@ -161,6 +177,10 @@ class HistoryCoordinator(DataUpdateCoordinator[HistorySnapshot]):
                 self.source_status = SourceStatus.AUTH_REQUIRED
                 self.last_error = type(err).__name__
                 raise ConfigEntryAuthFailed from err
+            except NowFitError as err:
+                self.source_status = _failure_status(err)
+                self.last_error = type(err).__name__
+                raise UpdateFailed(_failure_message(err)) from err
         except NowFitError as err:
             self.source_status = _failure_status(err)
             self.last_error = type(err).__name__
@@ -169,7 +189,7 @@ class HistoryCoordinator(DataUpdateCoordinator[HistorySnapshot]):
                 if isinstance(err, RateLimited)
                 else None
             )
-            raise UpdateFailed(type(err).__name__) from err
+            raise UpdateFailed(_failure_message(err)) from err
         fetched_at = datetime.now(ZoneInfo("UTC"))
         self.last_success_at = fetched_at
         self.source_status = SourceStatus.READY

@@ -4,11 +4,12 @@ from __future__ import annotations
 
 import asyncio
 from collections import deque
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from .client import MemberClient
-from .exceptions import InvalidCredentials, SessionExpired
+from .exceptions import InvalidCredentials, SessionExpired, UpstreamUnavailable
 
 
 class SessionManager:
@@ -18,11 +19,15 @@ class SessionManager:
         email: str,
         password: str | None,
         store_password: bool,
+        claim_relogin: Callable[[], Awaitable[bool]] | None = None,
+        relogin_succeeded: Callable[[], Awaitable[None]] | None = None,
     ) -> None:
         self.client = client
         self.email = email
         self._password = password if store_password else None
         self.store_password = store_password
+        self._claim_relogin = claim_relogin
+        self._relogin_succeeded = relogin_succeeded
         self.generation = 0
         self._lock = asyncio.Lock()
         self._attempts: deque[datetime] = deque(maxlen=2)
@@ -41,14 +46,19 @@ class SessionManager:
                 return
             if self._password is None:
                 raise SessionExpired("reauth_required")
+            if self._claim_relogin is not None and not await self._claim_relogin():
+                raise UpstreamUnavailable("relogin_cooldown")
             now = datetime.now(ZoneInfo("UTC"))
             while self._attempts and now - self._attempts[0] > timedelta(minutes=30):
                 self._attempts.popleft()
             if len(self._attempts) >= 2:
                 raise SessionExpired("login_budget_exhausted")
             self._attempts.append(now)
+            self.client.clear_session()
             try:
                 await self.async_login(self._password)
             except InvalidCredentials:
                 self._password = None
                 raise
+            if self._relogin_succeeded is not None:
+                await self._relogin_succeeded()

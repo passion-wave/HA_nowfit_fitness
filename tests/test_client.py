@@ -12,7 +12,12 @@ from custom_components.nowfit.client import (
     _validate_url,
     parse_retry_after,
 )
-from custom_components.nowfit.exceptions import RateLimited, UnexpectedContent, UnsafeRedirect
+from custom_components.nowfit.exceptions import (
+    RateLimited,
+    UnexpectedContent,
+    UnsafeRedirect,
+    UpstreamUnavailable,
+)
 
 FIXTURES = Path(__file__).parent / "fixtures"
 
@@ -97,6 +102,13 @@ async def test_rate_limit_and_content_guards() -> None:
         await PublicClient(
             FakeSession(FakeResponse(200, "x" * (2 * 1024 * 1024 + 1)))
         ).async_get_clubs()
+
+
+async def test_upstream_error_identifies_only_safe_operation_and_status() -> None:
+    client = MemberClient(FakeSession(FakeResponse(503)))
+
+    with pytest.raises(UpstreamUnavailable, match=r"^http_503:account$"):
+        await client.async_get_account()
 
 
 async def test_member_login_preserves_browser_checkbox_order() -> None:

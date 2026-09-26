@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from aiohttp import CookieJar
@@ -58,10 +58,19 @@ class NowFitCookieStore:
 
         self._store = Store(hass, 1, f"nowfit.{entry_id}.session")
         self._last_cookies: list[dict[str, Any]] | None = None
+        self._next_allowed_login_at: datetime | None = None
 
     async def async_load_into(self, jar: CookieJar, now: datetime) -> int:
         data = await self._store.async_load() or {}
         cookies = list(data.get("cookies", []))
+        next_allowed = data.get("next_allowed_login_at")
+        try:
+            parsed = datetime.fromisoformat(str(next_allowed)) if next_allowed else None
+            self._next_allowed_login_at = (
+                parsed if parsed is not None and parsed.tzinfo is not None else None
+            )
+        except ValueError:
+            self._next_allowed_login_at = None
         restored = restore_cookies(jar, cookies, now)
         self._last_cookies = export_cookies(jar, now)
         return restored
@@ -70,14 +79,16 @@ class NowFitCookieStore:
         self,
         jar: CookieJar,
         now: datetime,
-        *,
-        next_allowed_login_at: str | None = None,
     ) -> None:
         cookies = export_cookies(jar, now)
         await self._store.async_save(
             {
                 "cookies": cookies,
-                "next_allowed_login_at": next_allowed_login_at,
+                "next_allowed_login_at": (
+                    self._next_allowed_login_at.isoformat()
+                    if self._next_allowed_login_at is not None
+                    else None
+                ),
             }
         )
         self._last_cookies = cookies
@@ -86,3 +97,23 @@ class NowFitCookieStore:
         cookies = export_cookies(jar, now)
         if cookies != self._last_cookies:
             await self.async_save_from(jar, now)
+
+    async def async_claim_relogin(self, now: datetime) -> bool:
+        """Persistently allow at most one failed relogin per 30 minutes."""
+        if self._next_allowed_login_at is not None and now < self._next_allowed_login_at:
+            return False
+        self._next_allowed_login_at = now + timedelta(minutes=30)
+        await self._store.async_save(
+            {
+                "cookies": self._last_cookies or [],
+                "next_allowed_login_at": self._next_allowed_login_at.isoformat(),
+            }
+        )
+        return True
+
+    async def async_clear_relogin_guard(self) -> None:
+        """Clear the persistent guard after a complete successful login."""
+        self._next_allowed_login_at = None
+        await self._store.async_save(
+            {"cookies": self._last_cookies or [], "next_allowed_login_at": None}
+        )

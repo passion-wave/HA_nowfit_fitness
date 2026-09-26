@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -29,9 +30,11 @@ from .const import (
 from .cookie_store import NowFitCookieStore, restore_cookies
 from .coordinator import AccountCoordinator, HistoryCoordinator, OccupancyCoordinator
 from .exceptions import InvalidCredentials, NowFitError, SessionExpired
+from .flow_helpers import safe_error_code
 from .models import NowFitRuntimeData
 
 PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.BUTTON]
+_LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -49,13 +52,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         session = async_create_clientsession(hass, cookie_jar=jar)
         client = MemberClient(session)
         password = entry.data.get(CONF_PASSWORD)
+        store = NowFitCookieStore(hass, entry.entry_id)
         auth = SessionManager(
             client,
             entry.data[CONF_EMAIL],
             password,
             bool(entry.data.get(CONF_STORE_PASSWORD)),
+            claim_relogin=lambda: store.async_claim_relogin(datetime.now(ZoneInfo("UTC"))),
+            relogin_succeeded=store.async_clear_relogin_guard,
         )
-        store = NowFitCookieStore(hass, entry.entry_id)
         await store.async_load_into(jar, datetime.now(ZoneInfo("UTC")))
         pending = (
             hass.data.setdefault(DOMAIN, {})
@@ -83,7 +88,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         except (SessionExpired, InvalidCredentials) as err:
             raise ConfigEntryAuthFailed from err
         except NowFitError as err:
-            raise ConfigEntryNotReady from err
+            message = f"{type(err).__name__}:{safe_error_code(err)}"
+            _LOGGER.warning("Member setup temporarily unavailable: %s", message)
+            raise ConfigEntryNotReady(message) from err
         entry.runtime_data = NowFitRuntimeData(
             entry_type=kind,
             account_coordinator=account,

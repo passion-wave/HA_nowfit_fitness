@@ -56,11 +56,16 @@ class NowFitHttpClient:
     def set_success_callback(self, callback: Callable[[], Awaitable[None]]) -> None:
         self._on_success = callback
 
+    def clear_session(self) -> None:
+        """Discard only this dedicated client's provider cookies."""
+        self._session.cookie_jar.clear()
+
     async def _request(
         self,
         method: str,
         path_or_url: str,
         *,
+        operation: str,
         request_timeout: int,
         data: MultiDict[str] | None = None,
     ) -> tuple[str, str]:
@@ -91,7 +96,7 @@ class NowFitHttpClient:
                     raise RateLimited(retry)
                 if response.status >= 500:
                     response.release()
-                    raise UpstreamUnavailable(f"http_{response.status}")
+                    raise UpstreamUnavailable(f"http_{response.status}:{operation}")
                 if response.status in {401, 403}:
                     response.release()
                     raise SessionExpired(f"http_{response.status}")
@@ -117,13 +122,17 @@ class NowFitHttpClient:
 
 class PublicClient(NowFitHttpClient):
     async def async_get_clubs(self) -> tuple[ClubOccupancy, ...]:
-        html, _ = await self._request("GET", OCCUPANCY_PATH, request_timeout=15)
+        html, _ = await self._request(
+            "GET", OCCUPANCY_PATH, operation="occupancy", request_timeout=15
+        )
         return parse_occupancy(html)
 
 
 class MemberClient(NowFitHttpClient):
     async def async_login(self, email: str, password: str, remember: bool) -> AccountSnapshot:
-        login_html, login_url = await self._request("GET", LOGIN_PATH, request_timeout=20)
+        login_html, login_url = await self._request(
+            "GET", LOGIN_PATH, operation="login_form", request_timeout=20
+        )
         form = parse_login_form(login_html, login_url)
         payload: MultiDict[str] = MultiDict(form.hidden_fields)
         payload.add(form.email_name, email.strip())
@@ -132,19 +141,29 @@ class MemberClient(NowFitHttpClient):
             if remember:
                 payload.add(form.remember_name, "true")
             payload.add(form.remember_name, "false")
-        html, final_url = await self._request("POST", form.action, request_timeout=20, data=payload)
+        html, final_url = await self._request(
+            "POST",
+            form.action,
+            operation="login_submit",
+            request_timeout=20,
+            data=payload,
+        )
         if urlparse(final_url).path == LOGIN_PATH or 'type="password"' in html.casefold():
             raise InvalidCredentials("login_not_accepted")
         return await self.async_get_account()
 
     async def async_get_account(self) -> AccountSnapshot:
-        html, final_url = await self._request("GET", ACCOUNT_PATH, request_timeout=20)
+        html, final_url = await self._request(
+            "GET", ACCOUNT_PATH, operation="account", request_timeout=20
+        )
         if urlparse(final_url).path == LOGIN_PATH:
             raise SessionExpired("redirected_to_login")
         return parse_account(html, datetime.now(ZoneInfo("UTC")))
 
     async def async_get_history(self, timezone: ZoneInfo) -> tuple[RawVisit, ...]:
-        html, final_url = await self._request("GET", HISTORY_PATH, request_timeout=20)
+        html, final_url = await self._request(
+            "GET", HISTORY_PATH, operation="history", request_timeout=20
+        )
         if urlparse(final_url).path == LOGIN_PATH:
             raise SessionExpired("redirected_to_login")
         return parse_history(html, timezone)
